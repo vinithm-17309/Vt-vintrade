@@ -62,20 +62,11 @@ const cryptoSymbols: Asset[] = [
   { symbol: 'ETH', name: 'Ethereum', price: 0, change: 0, changePercent: 0 },
   { symbol: 'BNB', name: 'Binance Coin', price: 0, change: 0, changePercent: 0 },
   { symbol: 'SOL', name: 'Solana', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'XRP', name: 'Ripple', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'ADA', name: 'Cardano', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'DOGE', name: 'Dogecoin', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'DOT', name: 'Polkadot', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'MATIC', name: 'Polygon', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'AVAX', name: 'Avalanche', price: 0, change: 0, changePercent: 0 },
 ];
 
 const indianStocks: Asset[] = [
   { symbol: 'RELIANCE', name: 'Reliance Industries', price: 0, change: 0, changePercent: 0 },
   { symbol: 'TCS', name: 'Tata Consultancy Services', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'INFY', name: 'Infosys', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 0, change: 0, changePercent: 0 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 0, change: 0, changePercent: 0 },
 ];
 
 /* ================= CONTEXT ================= */
@@ -94,7 +85,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [cryptoAssets, setCryptoAssets] = useState<Asset[]>(cryptoSymbols);
   const [stockAssets, setStockAssets] = useState<Asset[]>(indianStocks);
-  const [watchlist, setWatchlist] = useState<string[]>(['BTC', 'ETH', 'RELIANCE']);
+  const [watchlist, setWatchlist] = useState<string[]>(['BTC', 'ETH']);
   const [portfolio, setPortfolio] = useState<Position[]>([]);
   const [virtualBalance, setVirtualBalanceState] = useState<number>(100000);
   const [hasTraded, setHasTraded] = useState(false);
@@ -104,7 +95,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* ===== REALTIME CRYPTO ===== */
+  /* ===== REALTIME UPDATE ===== */
 
   useEffect(() => {
     const updateCrypto = (data: CryptoTickerData[]) => {
@@ -123,7 +114,6 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         })
       );
 
-      // 🔥 Update portfolio real-time price
       setPortfolio(prev =>
         prev.map(position => {
           const updated = data.find(d => d.symbol === position.symbol);
@@ -145,7 +135,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
-  /* ===== TRADE FUNCTION ===== */
+  /* ===== TRADE LOGIC (LONG + SHORT) ===== */
 
   const executeTrade = async (
     symbol: string,
@@ -165,52 +155,97 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPortfolio(prev => {
       const existing = prev.find(p => p.symbol === symbol);
 
-      if (type === 'buy') {
-        if (cost > virtualBalance) return prev;
+      if (existing) {
 
-        if (existing) {
+        // CLOSE SHORT
+        if (existing.type === 'sell' && type === 'buy') {
+          if (quantity > existing.quantity) return prev;
+
+          const remainingQty = existing.quantity - quantity;
+          setVirtualBalanceState(b => b - cost);
+
+          if (remainingQty === 0) {
+            return prev.filter(p => p.symbol !== symbol);
+          }
+
+          return prev.map(p =>
+            p.symbol === symbol ? { ...p, quantity: remainingQty } : p
+          );
+        }
+
+        // CLOSE LONG
+        if (existing.type === 'buy' && type === 'sell') {
+          if (quantity > existing.quantity) return prev;
+
+          const remainingQty = existing.quantity - quantity;
+          setVirtualBalanceState(b => b + cost);
+
+          if (remainingQty === 0) {
+            return prev.filter(p => p.symbol !== symbol);
+          }
+
+          return prev.map(p =>
+            p.symbol === symbol ? { ...p, quantity: remainingQty } : p
+          );
+        }
+
+        // ADD TO LONG
+        if (existing.type === 'buy' && type === 'buy') {
           const newQty = existing.quantity + quantity;
           const newAvg =
             (existing.averagePrice * existing.quantity + cost) / newQty;
 
+          setVirtualBalanceState(b => b - cost);
+
           return prev.map(p =>
             p.symbol === symbol
-              ? { ...p, quantity: newQty, averagePrice: newAvg, currentPrice: price }
+              ? { ...p, quantity: newQty, averagePrice: newAvg }
               : p
           );
         }
 
+        // ADD TO SHORT
+        if (existing.type === 'sell' && type === 'sell') {
+          const newQty = existing.quantity + quantity;
+          const newAvg =
+            (existing.averagePrice * existing.quantity + cost) / newQty;
+
+          setVirtualBalanceState(b => b + cost);
+
+          return prev.map(p =>
+            p.symbol === symbol
+              ? { ...p, quantity: newQty, averagePrice: newAvg }
+              : p
+          );
+        }
+
+        return prev;
+      }
+
+      // OPEN NEW LONG
+      if (type === 'buy') {
+        if (cost > virtualBalance) return prev;
+
+        setVirtualBalanceState(b => b - cost);
+
         return [
           ...prev,
-          { symbol, quantity, averagePrice: price, currentPrice: price, type }
+          { symbol, quantity, averagePrice: price, currentPrice: price, type: 'buy' }
         ];
       }
 
+      // OPEN NEW SHORT
       if (type === 'sell') {
-        if (!existing) return prev;
-        if (quantity > existing.quantity) return prev;
-
-        const remainingQty = existing.quantity - quantity;
-
         setVirtualBalanceState(b => b + cost);
 
-        if (remainingQty === 0) {
-          return prev.filter(p => p.symbol !== symbol);
-        }
-
-        return prev.map(p =>
-          p.symbol === symbol
-            ? { ...p, quantity: remainingQty, currentPrice: price }
-            : p
-        );
+        return [
+          ...prev,
+          { symbol, quantity, averagePrice: price, currentPrice: price, type: 'sell' }
+        ];
       }
 
       return prev;
     });
-
-    if (type === 'buy') {
-      setVirtualBalanceState(prev => prev - cost);
-    }
 
     setEquityCurve(prev => [...prev, virtualBalance]);
 
@@ -229,7 +264,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   /* ===== AUTH ===== */
 
-  const login = async (email: string, name: string) => {
+  const login = async (email: string) => {
     const user = await databaseService.getUserByEmail(email);
     if (user) {
       setCurrentUser(user);
