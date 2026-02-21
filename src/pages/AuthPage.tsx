@@ -89,11 +89,14 @@ const AuthPage: React.FC = () => {
   };
 
   // =========================
-  // GOOGLE LOGIN
+  // GOOGLE LOGIN (UPDATED)
   // =========================
   const handleGoogleAuth = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google'
+      provider: 'google',
+      options: {
+        redirectTo: 'https://vt-vintrade.vercel.app/auth/callback'
+      }
     });
 
     if (error) {
@@ -103,6 +106,7 @@ const AuthPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex">
+      
       {/* LEFT SIDE */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20" />
