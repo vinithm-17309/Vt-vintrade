@@ -10,7 +10,7 @@ const AuthCallback = () => {
       const { data } = await supabase.auth.getSession();
 
       if (data.session) {
-        navigate("/dashboard"); // make sure this matches your route
+        navigate("/markets"); // make sure this matches your route
       } else {
         navigate("/auth");
       }
