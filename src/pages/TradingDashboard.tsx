@@ -32,24 +32,23 @@ const TradingDashboard: React.FC = () => {
   };
 
   const getTradingViewSymbol = () => {
-    if (!selectedAsset) {
-      return currentMarket === "crypto"
-        ? "BINANCE:BTCUSDT"
-        : "NSE:HDFCBANK";
-    }
+  if (!selectedAsset) {
+    return currentMarket === "crypto"
+      ? "BINANCE:BTCUSDT"
+      : "NSE:HDFCBANK";
+  }
 
-    if (selectedAsset.includes(":")) return selectedAsset;
+  // GOLD special case
+  if (selectedAsset === "XAUUSD") {
+    return "OANDA:XAUUSD";
+  }
 
-    if (currentMarket === "crypto") {
-      if (selectedAsset.endsWith("USDT")) {
-        return `BINANCE:${selectedAsset}`;
-      }
-      return `BINANCE:${selectedAsset}USDT`;
-    }
+  if (currentMarket === "crypto") {
+    return `BINANCE:${selectedAsset}USDT`;
+  }
 
-    return `NSE:${selectedAsset}`;
-  };
-
+  return `NSE:${selectedAsset}`;
+};
   const tvSymbol = getTradingViewSymbol();
 
   return (

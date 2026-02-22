@@ -62,6 +62,7 @@ const cryptoSymbols: Asset[] = [
   { symbol: 'ETH', name: 'Ethereum', price: 0, change: 0, changePercent: 0 },
   { symbol: 'BNB', name: 'Binance Coin', price: 0, change: 0, changePercent: 0 },
   { symbol: 'SOL', name: 'Solana', price: 0, change: 0, changePercent: 0 },
+  { symbol: "XAUUSD", name: "Gold", price: 0, change: 0, changePercent: 0 },
 ];
 
 const indianStocks: Asset[] = [
