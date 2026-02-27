@@ -7,6 +7,7 @@ import MarketSelection from './pages/MarketSelection';
 import TradingDashboard from './pages/TradingDashboard';
 import AuthCallback from './pages/AuthCallback'; 
 import { TradingProvider } from './context/TradingContext';
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-black">
           <Routes>
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
 

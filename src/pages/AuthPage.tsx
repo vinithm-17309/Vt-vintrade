@@ -28,6 +28,29 @@ const AuthPage: React.FC = () => {
   });
 
   // =========================
+  // FORGOT PASSWORD
+  // =========================
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      alert('Please enter your email first');
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      formData.email,
+      {
+        redirectTo: 'https://vt-vintrade.vercel.app/reset-password'
+      }
+    );
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert('Password reset email sent! Check your inbox.');
+    }
+  };
+
+  // =========================
   // EMAIL SIGNUP / LOGIN
   // =========================
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +73,6 @@ const AuthPage: React.FC = () => {
           return;
         }
 
-        // ✅ CREATE PROFILE WITH VIRTUAL BALANCE
         if (data.user) {
           await supabase.from('profiles').insert({
             id: data.user.id,
@@ -89,7 +111,7 @@ const AuthPage: React.FC = () => {
   };
 
   // =========================
-  // GOOGLE LOGIN (UPDATED)
+  // GOOGLE LOGIN
   // =========================
   const handleGoogleAuth = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -215,6 +237,19 @@ const AuthPage: React.FC = () => {
                 {showPassword ? <EyeOff /> : <Eye />}
               </button>
             </div>
+
+            {/* 🔥 FORGOT PASSWORD BUTTON */}
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-blue-400 hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             <button
               type="submit"
